@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Deliveries{% endblock %}
+
+{% block content %}
+    <h2 class="mb-3">All Deliveries</h2>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Customer</th>
+                    <th>Restaurant</th>
+                    <th>Pickup Time</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in records %}
+                <tr>
+                    <td>{{ row.First_Name }} {{ row.Last_Name }}</td>
+                    <td>{{ row.Restaurant_Name }}</td>
+                    <td>{{ row.Pickup_Time }}</td>
+                    <td>{{ row.Location }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

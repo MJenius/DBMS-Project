@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Delivery{% endblock %}
+
+{% block content %}
+    <h2 class="mb-3">Assign Delivery to Driver</h2>
+
+    <div class="card mx-auto" style="max-width:720px;">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Order</label>
+                    <select name="order_id" class="form-select" required>
+                        {% for o in orders %}
+                            <option value="{{ o.Order_ID }}">Order #{{ o.Order_ID }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Restaurant</label>
+                    <select name="restaurant_id" class="form-select" required>
+                        {% for r in restaurants %}
+                            <option value="{{ r.Restaurant_ID }}">{{ r.Name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Driver</label>
+                    <select name="driver_id" class="form-select" required>
+                        {% for d in drivers %}
+                            <option value="{{ d.Driver_ID }}">{{ d.First_Name }} {{ d.Last_Name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Delivery Location</label>
+                    <input type="text" name="location" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Delivery Fee (₹)</label>
+                    <input type="number" step="0.01" name="fee" class="form-control" required>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Assign Delivery</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

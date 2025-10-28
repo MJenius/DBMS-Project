@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Edit' if item else 'Add' }} Menu Item{% endblock %}
+
+{% block content %}
+  <h2 class="mb-3">{{ 'Edit' if item else 'Add' }} Menu Item</h2>
+
+  <div class="card mx-auto" style="max-width:720px;">
+    <div class="card-body">
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label">Name</label>
+          <input class="form-control" name="name" value="{{ item.Name if item else '' }}" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Restaurant</label>
+          <select class="form-select" name="restaurant_id" required>
+            {% for r in restaurants %}
+              <option value="{{ r.Restaurant_ID }}" {% if item and item.Restaurant_ID==r.Restaurant_ID %}selected{% endif %}>{{ r.Name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" name="description">{{ item.Description if item else '' }}</textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Price</label>
+          <input class="form-control" name="price" value="{{ item.Price if item else '' }}" type="number" step="0.01" required>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <a class="btn btn-outline-secondary" href="{{ url_for('menu_items') }}">Cancel</a>
+          <button class="btn btn-primary">{{ 'Update' if item else 'Add' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

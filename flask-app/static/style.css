@@ -1,0 +1,46 @@
+/* Keep a light base but rely on Bootstrap for layout */
+body {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background-color: #f4f6fb;
+    color: #16202a;
+}
+
+.card-title {
+    font-weight: 600;
+}
+
+.card-subtitle {
+    font-size: 0.9rem;
+}
+
+.table thead th {
+    vertical-align: middle;
+}
+
+.btn-outline-primary {
+    border-color: #0d6efd;
+}
+
+/* small screens tweaks */
+@media (max-width: 576px) {
+    .card .card-body h3 { font-size: 1.4rem; }
+}
+
+/* Flash colors */
+.flash.success { background: #d1e7dd; padding: 10px; border-radius: 6px; }
+
+/* Slight shadow on cards */
+.card { border-radius: 8px; }
+
+/* Improve form card spacing */
+.card .card-body form .mb-3 label { font-weight: 600; }
+
+/* Brand accents */
+.navbar-brand { font-weight: 700; letter-spacing: .3px; }
+.table-primary { background: linear-gradient(90deg,#e9d5ff,#cfe1ff); }
+.table thead th { color: #1b1b1b; }
+.btn-success { background: linear-gradient(90deg,#20c997,#38d9a9); border: none; }
+.btn-primary { background: linear-gradient(90deg,#0d6efd,#4f46e5); border: none; }
+
+.footer-muted { color: #6c757d; }
+

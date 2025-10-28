@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Food Delivery Admin{% endblock %}
+
+{% block content %}
+  <h1 class="mb-4">Dashboard</h1>
+
+  <div class="row g-3">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Orders</h6>
+          <h3 class="card-title">{{ counts.orders or 0 }}</h3>
+          <a href="{{ url_for('orders') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Deliveries</h6>
+          <h3 class="card-title">{{ counts.deliveries or 0 }}</h3>
+          <a href="{{ url_for('view_data') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Drivers</h6>
+          <h3 class="card-title">{{ counts.drivers or 0 }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Restaurants</h6>
+          <h3 class="card-title">{{ counts.restaurants or 0 }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <p>Quick links:</p>
+    <div class="btn-group" role="group">
+      <a class="btn btn-outline-primary" href="{{ url_for('place_order') }}">Place Order</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('assign_delivery') }}">Assign Delivery</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('reports') }}">Reports</a>
+    </div>
+  </div>
+
+{% endblock %}
