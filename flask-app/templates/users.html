@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>👥 Database User Management</h2>
+        <a href="{{ url_for('create_user') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Create New User
+        </a>
+    </div>
+
+    <!-- Users Table -->
+    {% if users %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Registered Database Users ({{ users|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Username</th>
+                            <th>Host</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td><strong>{{ user.user or 'Anonymous' }}</strong></td>
+                            <td><code>{{ user.host }}</code></td>
+                            <td>
+                                <a href="{{ url_for('user_privileges', username=user.user) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-shield-check"></i> View Privileges
+                                </a>
+                                {% if user.user.lower() not in ['root', 'admin', 'mysql.sys', 'mysql.session'] %}
+                                <form method="POST" action="{{ url_for('delete_user', username=user.user) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete user {{ user.user }}?')">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> No users found or error loading users.
+    </div>
+    {% endif %}
+
+    <!-- User Roles Info -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-light border-primary">
+                <div class="card-header bg-primary text-white">
+                    <strong>Admin</strong>
+                </div>
+                <div class="card-body">
+                    <p class="small"><strong>Privileges:</strong></p>
+                    <ul class="small mb-0">
+                        <li>All database operations</li>
+                        <li>Full control</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light border-success">
+                <div class="card-header bg-success text-white">
+                    <strong>Manager</strong>
+                </div>
+                <div class="card-body">
+                    <p class="small"><strong>Privileges:</strong></p>
+                    <ul class="small mb-0">
+                        <li>SELECT</li>
+                        <li>INSERT</li>
+                        <li>UPDATE</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light border-info">
+                <div class="card-header bg-info text-white">
+                    <strong>Operator</strong>
+                </div>
+                <div class="card-body">
+                    <p class="small"><strong>Privileges:</strong></p>
+                    <ul class="small mb-0">
+                        <li>CRUD on orders</li>
+                        <li>CRUD on deliveries</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <strong>Viewer</strong>
+                </div>
+                <div class="card-body">
+                    <p class="small"><strong>Privileges:</strong></p>
+                    <ul class="small mb-0">
+                        <li>SELECT only</li>
+                        <li>Read-only access</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

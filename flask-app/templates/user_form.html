@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Database User{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Create New Database User</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('create_user') }}">
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username:</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="username" 
+                                name="username" 
+                                placeholder="Enter username (e.g., user_manager)"
+                                required
+                                autocomplete="off"
+                            >
+                            <small class="text-muted">Username must be alphanumeric and unique.</small>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password:</label>
+                            <input 
+                                type="password" 
+                                class="form-control" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter secure password"
+                                required
+                                autocomplete="new-password"
+                            >
+                            <small class="text-muted">Use a strong password with uppercase, lowercase, and numbers.</small>
+                        </div>
+
+                        <!-- Privilege Level -->
+                        <div class="mb-4">
+                            <label for="privilege_level" class="form-label">Privilege Level:</label>
+                            <select class="form-select form-select-lg" id="privilege_level" name="privilege_level" required onchange="updatePrivilegeInfo()">
+                                <option value="">-- Select Privilege Level --</option>
+                                <option value="admin">Admin (Full Access)</option>
+                                <option value="manager">Manager (Select, Insert, Update)</option>
+                                <option value="operator">Operator (Order & Delivery Operations)</option>
+                                <option value="viewer">Viewer (Read-Only Access)</option>
+                            </select>
+                        </div>
+
+                        <!-- Privilege Info -->
+                        <div id="privilege-info" class="alert alert-info mb-4" style="display:none;">
+                            <p id="privilege-description"></p>
+                            <hr>
+                            <small>
+                                <strong>Permissions:</strong><br>
+                                <ul id="privilege-list" style="margin-bottom: 0;"></ul>
+                            </small>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success flex-grow-1">
+                                <i class="bi bi-check-circle"></i> Create User
+                            </button>
+                            <a href="{{ url_for('users') }}" class="btn btn-secondary flex-grow-1">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Privilege Descriptions -->
+            <div class="card mt-4 border-0">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">📋 Privilege Levels Guide</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong class="text-danger">Admin</strong>
+                        <p class="small text-muted mb-0">Full control over all database operations. Can create, modify, and delete any data.</p>
+                    </div>
+                    <hr class="my-2">
+                    <div class="mb-3">
+                        <strong class="text-success">Manager</strong>
+                        <p class="small text-muted mb-0">Can view, create, and modify data. Cannot delete or manage users.</p>
+                    </div>
+                    <hr class="my-2">
+                    <div class="mb-3">
+                        <strong class="text-primary">Operator</strong>
+                        <p class="small text-muted mb-0">Can manage orders and deliveries (Create, Read, Update, Delete).</p>
+                    </div>
+                    <hr class="my-2">
+                    <div class="mb-0">
+                        <strong class="text-warning">Viewer</strong>
+                        <p class="small text-muted mb-0">Read-only access. Can view data but cannot make any modifications.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updatePrivilegeInfo() {
+    const select = document.getElementById('privilege_level');
+    const infoDiv = document.getElementById('privilege-info');
+    const descriptionEl = document.getElementById('privilege-description');
+    const listEl = document.getElementById('privilege-list');
+    
+    const privileges = {
+        'admin': {
+            description: 'Admin User - Full database access',
+            permissions: ['CREATE databases', 'ALTER tables', 'DROP objects', 'GRANT privileges', 'All DML/DDL operations']
+        },
+        'manager': {
+            description: 'Manager User - Can read and modify data',
+            permissions: ['SELECT - View all data', 'INSERT - Add new records', 'UPDATE - Modify existing records']
+        },
+        'operator': {
+            description: 'Operator User - Order and delivery management',
+            permissions: ['Full CRUD on Orders', 'Full CRUD on Deliveries', 'Full CRUD on Order Items']
+        },
+        'viewer': {
+            description: 'Viewer User - Read-only access',
+            permissions: ['SELECT - View data', 'No write permissions', 'No delete permissions']
+        }
+    };
+    
+    if (select.value && privileges[select.value]) {
+        const priv = privileges[select.value];
+        descriptionEl.textContent = priv.description;
+        listEl.innerHTML = priv.permissions.map(p => `<li>${p}</li>`).join('');
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

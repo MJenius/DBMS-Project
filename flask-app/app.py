@@ -209,6 +209,194 @@ def reports():
 
 
 # ----------------------------
+# Query 1: NESTED QUERY - Customers with multiple orders
+# ----------------------------
+@app.route('/query/nested-query', methods=['GET', 'POST'])
+def nested_query():
+    """
+    Nested Query: Find customers with more than X active orders
+    """
+    cur = get_cursor()
+    results = []
+    min_orders = 0
+    
+    if request.method == 'POST':
+        min_orders = int(request.form.get('min_orders', 1))
+        
+        # NESTED QUERY: Select customers who have active orders > min_orders
+        query = """
+        SELECT Customer_ID, CONCAT(First_Name, ' ', Last_Name) AS CustomerName, Email, Phone_No
+        FROM customers
+        WHERE Customer_ID IN (
+            SELECT Customer_ID FROM customer_current_orders
+            GROUP BY Customer_ID
+            HAVING COUNT(*) > %s
+        )
+        ORDER BY Customer_ID
+        """
+        cur.execute(query, (min_orders,))
+        results = cur.fetchall()
+        
+        if not results:
+            flash(f'No customers found with more than {min_orders} active orders.', 'info')
+    
+    return render_template('query_nested.html', results=results, min_orders=min_orders)
+
+
+# ----------------------------
+# Query 2: JOIN QUERY - Orders with delivery details
+# ----------------------------
+@app.route('/query/join-query', methods=['GET', 'POST'])
+def join_query():
+    """
+    Join Query: Find orders with their delivery and restaurant information
+    """
+    cur = get_cursor()
+    results = []
+    restaurant_filter = ''
+    
+    if request.method == 'POST':
+        restaurant_filter = request.form.get('restaurant_id', '')
+        
+        # JOIN QUERY: Select orders with complete delivery and restaurant information
+        if restaurant_filter and restaurant_filter.isdigit():
+            query = """
+            SELECT 
+                o.Order_ID,
+                CONCAT(c.First_Name, ' ', c.Last_Name) AS CustomerName,
+                r.Name AS RestaurantName,
+                o.Order_Date,
+                o.Total_Amount,
+                d.Delivery_ID,
+                d.Location,
+                d.Delivery_Fee,
+                CONCAT(dr.First_Name, ' ', dr.Last_Name) AS DriverName
+            FROM orders o
+            JOIN customers c ON o.Customer_ID = c.Customer_ID
+            JOIN restaurants r ON o.Restaurant_ID = r.Restaurant_ID
+            LEFT JOIN deliveries d ON o.Order_ID = d.Order_ID
+            LEFT JOIN delivery_drivers dr ON d.Driver_ID = dr.Driver_ID
+            WHERE r.Restaurant_ID = %s
+            ORDER BY o.Order_Date DESC
+            """
+            cur.execute(query, (restaurant_filter,))
+        else:
+            query = """
+            SELECT 
+                o.Order_ID,
+                CONCAT(c.First_Name, ' ', c.Last_Name) AS CustomerName,
+                r.Name AS RestaurantName,
+                o.Order_Date,
+                o.Total_Amount,
+                d.Delivery_ID,
+                d.Location,
+                d.Delivery_Fee,
+                CONCAT(dr.First_Name, ' ', dr.Last_Name) AS DriverName
+            FROM orders o
+            JOIN customers c ON o.Customer_ID = c.Customer_ID
+            JOIN restaurants r ON o.Restaurant_ID = r.Restaurant_ID
+            LEFT JOIN deliveries d ON o.Order_ID = d.Order_ID
+            LEFT JOIN delivery_drivers dr ON d.Driver_ID = dr.Driver_ID
+            ORDER BY o.Order_Date DESC
+            LIMIT 50
+            """
+            cur.execute(query)
+        
+        results = cur.fetchall()
+        
+        if not results:
+            flash('No orders found matching the criteria.', 'info')
+    
+    # Get restaurants for filter dropdown
+    cur.execute("SELECT Restaurant_ID, Name FROM restaurants ORDER BY Name")
+    restaurants = cur.fetchall()
+    
+    return render_template('query_join.html', results=results, restaurants=restaurants, selected_restaurant=restaurant_filter)
+
+
+# ----------------------------
+# Query 3: AGGREGATE QUERY - Revenue and statistics
+# ----------------------------
+@app.route('/query/aggregate-query', methods=['GET', 'POST'])
+def aggregate_query():
+    """
+    Aggregate Query: Calculate revenue, order counts, and statistics
+    """
+    cur = get_cursor()
+    results = []
+    query_type = 'all_restaurants'
+    
+    if request.method == 'POST':
+        query_type = request.form.get('query_type', 'all_restaurants')
+        
+        if query_type == 'all_restaurants':
+            # AGGREGATE QUERY: Restaurant revenue and order statistics
+            query = """
+            SELECT 
+                r.Restaurant_ID,
+                r.Name,
+                COUNT(DISTINCT o.Order_ID) AS TotalOrders,
+                COALESCE(SUM(o.Total_Amount), 0) AS TotalRevenue,
+                ROUND(AVG(o.Total_Amount), 2) AS AvgOrderValue,
+                MAX(o.Total_Amount) AS HighestOrder,
+                MIN(o.Total_Amount) AS LowestOrder
+            FROM restaurants r
+            LEFT JOIN orders o ON r.Restaurant_ID = o.Restaurant_ID
+            GROUP BY r.Restaurant_ID, r.Name
+            HAVING COUNT(DISTINCT o.Order_ID) > 0
+            ORDER BY TotalRevenue DESC
+            """
+            cur.execute(query)
+            results = cur.fetchall()
+            
+            if not results:
+                flash('No restaurants with orders found.', 'info')
+        
+        elif query_type == 'driver_earnings':
+            # AGGREGATE QUERY: Driver earnings statistics
+            query = """
+            SELECT 
+                dr.Driver_ID,
+                CONCAT(dr.First_Name, ' ', dr.Last_Name) AS DriverName,
+                COUNT(DISTINCT d.Delivery_ID) AS TotalDeliveries,
+                COALESCE(SUM(d.Delivery_Fee), 0) AS TotalEarnings,
+                ROUND(AVG(d.Delivery_Fee), 2) AS AvgFeePerDelivery
+            FROM delivery_drivers dr
+            LEFT JOIN deliveries d ON dr.Driver_ID = d.Driver_ID
+            GROUP BY dr.Driver_ID, dr.First_Name, dr.Last_Name
+            ORDER BY TotalEarnings DESC
+            """
+            cur.execute(query)
+            results = cur.fetchall()
+            
+            if not results:
+                flash('No driver earnings data found.', 'info')
+        
+        elif query_type == 'customer_spending':
+            # AGGREGATE QUERY: Customer spending statistics
+            query = """
+            SELECT 
+                c.Customer_ID,
+                CONCAT(c.First_Name, ' ', c.Last_Name) AS CustomerName,
+                COUNT(DISTINCT o.Order_ID) AS TotalOrders,
+                COALESCE(SUM(o.Total_Amount), 0) AS TotalSpent,
+                ROUND(AVG(o.Total_Amount), 2) AS AvgOrderValue
+            FROM customers c
+            LEFT JOIN orders o ON c.Customer_ID = o.Customer_ID
+            GROUP BY c.Customer_ID, c.First_Name, c.Last_Name
+            HAVING COUNT(DISTINCT o.Order_ID) > 0
+            ORDER BY TotalSpent DESC
+            """
+            cur.execute(query)
+            results = cur.fetchall()
+            
+            if not results:
+                flash('No customer spending data found.', 'info')
+    
+    return render_template('query_aggregate.html', results=results, query_type=query_type)
+
+
+# ----------------------------
 # CRUD: Customers
 # ----------------------------
 @app.route('/customers')
@@ -416,6 +604,113 @@ def delete_menu_item(menu_item_id: int):
     commit_db()
     flash('Menu item deleted', 'warning')
     return redirect(url_for('menu_items'))
+
+
+# ----------------------------
+# USER MANAGEMENT: Create Users and Grant Privileges
+# ----------------------------
+@app.route('/users')
+def users():
+    """
+    Display list of database users and their privileges
+    """
+    cur = get_cursor()
+    try:
+        cur.execute("SELECT user, host FROM mysql.user ORDER BY user")
+        users_list = cur.fetchall()
+    except Exception as e:
+        flash(f'Error fetching users: {str(e)}', 'danger')
+        users_list = []
+    
+    return render_template('users.html', users=users_list)
+
+
+@app.route('/user/create', methods=['GET', 'POST'])
+def create_user():
+    """
+    Create a new database user with specific privileges
+    """
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        privilege_level = request.form['privilege_level']
+        
+        if not username or not password:
+            flash('Username and password are required', 'danger')
+            return render_template('user_form.html')
+        
+        cur = get_cursor()
+        try:
+            # Create user
+            cur.execute(f"CREATE USER IF NOT EXISTS '{username}'@'localhost' IDENTIFIED BY '{password}'")
+            
+            # Grant privileges based on role
+            if privilege_level == 'admin':
+                cur.execute(f"GRANT ALL PRIVILEGES ON dbms_project.* TO '{username}'@'localhost'")
+                privilege_desc = "All Privileges (Admin)"
+            elif privilege_level == 'manager':
+                cur.execute(f"GRANT SELECT, INSERT, UPDATE ON dbms_project.* TO '{username}'@'localhost'")
+                privilege_desc = "Select, Insert, Update (Manager)"
+            elif privilege_level == 'viewer':
+                cur.execute(f"GRANT SELECT ON dbms_project.* TO '{username}'@'localhost'")
+                privilege_desc = "Select Only (Viewer)"
+            elif privilege_level == 'operator':
+                # Operator can do CRUD on specific tables
+                cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON dbms_project.orders TO '{username}'@'localhost'")
+                cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON dbms_project.order_items TO '{username}'@'localhost'")
+                cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON dbms_project.deliveries TO '{username}'@'localhost'")
+                privilege_desc = "Order/Delivery Operations (Operator)"
+            
+            cur.execute("FLUSH PRIVILEGES")
+            commit_db()
+            
+            flash(f'User "{username}" created with {privilege_desc}', 'success')
+            return redirect(url_for('users'))
+        
+        except Exception as e:
+            flash(f'Error creating user: {str(e)}', 'danger')
+            return render_template('user_form.html')
+    
+    return render_template('user_form.html')
+
+
+@app.route('/user/delete/<username>', methods=['POST'])
+def delete_user(username: str):
+    """
+    Delete a database user
+    """
+    if username.lower() in ['root', 'admin']:
+        flash(f'Cannot delete system user: {username}', 'danger')
+        return redirect(url_for('users'))
+    
+    cur = get_cursor()
+    try:
+        cur.execute(f"DROP USER IF EXISTS '{username}'@'localhost'")
+        cur.execute("FLUSH PRIVILEGES")
+        commit_db()
+        flash(f'User "{username}" deleted successfully', 'success')
+    except Exception as e:
+        flash(f'Error deleting user: {str(e)}', 'danger')
+    
+    return redirect(url_for('users'))
+
+
+@app.route('/user/privileges/<username>')
+def user_privileges(username: str):
+    """
+    View and manage privileges for a specific user
+    """
+    cur = get_cursor()
+    try:
+        # Get user grants information
+        cur.execute(f"SHOW GRANTS FOR '{username}'@'localhost'")
+        grants = cur.fetchall()
+    except Exception as e:
+        flash(f'Error fetching privileges: {str(e)}', 'danger')
+        grants = []
+    
+    return render_template('user_privileges.html', username=username, grants=grants)
+
 
 # ----------------------------
 if __name__ == '__main__':

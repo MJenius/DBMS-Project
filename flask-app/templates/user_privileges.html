@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}User Privileges - {{ username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="mb-4">
+        <a href="{{ url_for('users') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Users
+        </a>
+    </div>
+
+    <h2 class="mb-4">🔐 User Privileges: <strong>{{ username }}</strong></h2>
+
+    <!-- Privileges Info -->
+    {% if grants %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Current Privileges & Grants</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Grant Statement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grant in grants %}
+                        <tr>
+                            <td>
+                                <code class="bg-light p-2 d-block rounded">
+                                    {% set grant_text = grant.values()|list %}
+                                    {{ grant_text[0] }}
+                                </code>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privilege Summary -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-left-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Database Access</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-0">
+                        This user has permissions on database: <strong>dbms_project</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-left-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">Scope</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-0">
+                        Connected from host: <strong>localhost</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> No privileges found for this user or error retrieving privileges.
+    </div>
+    {% endif %}
+
+    <!-- Privilege Description -->
+    <div class="card mt-4 bg-light">
+        <div class="card-header bg-secondary text-white">
+            <h6 class="mb-0">Understanding Database Privileges</h6>
+        </div>
+        <div class="card-body small">
+            <dl class="row">
+                <dt class="col-sm-3"><strong>SELECT</strong></dt>
+                <dd class="col-sm-9">Permission to read/view data from tables</dd>
+
+                <dt class="col-sm-3"><strong>INSERT</strong></dt>
+                <dd class="col-sm-9">Permission to add new records to tables</dd>
+
+                <dt class="col-sm-3"><strong>UPDATE</strong></dt>
+                <dd class="col-sm-9">Permission to modify existing records</dd>
+
+                <dt class="col-sm-3"><strong>DELETE</strong></dt>
+                <dd class="col-sm-9">Permission to remove records from tables</dd>
+
+                <dt class="col-sm-3"><strong>CREATE</strong></dt>
+                <dd class="col-sm-9">Permission to create new tables and databases</dd>
+
+                <dt class="col-sm-3"><strong>ALTER</strong></dt>
+                <dd class="col-sm-9">Permission to modify table structure</dd>
+
+                <dt class="col-sm-3"><strong>DROP</strong></dt>
+                <dd class="col-sm-9">Permission to delete tables and databases</dd>
+
+                <dt class="col-sm-3"><strong>GRANT</strong></dt>
+                <dd class="col-sm-9">Permission to grant privileges to other users</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-left-4 {
+        border-left: 4px solid !important;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Join Query - Orders with Delivery Details{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">📊 Join Query: Orders with Complete Delivery Details</h2>
+
+    <!-- Query Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Query Parameters</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">This join query displays all orders with their customer, restaurant, and delivery driver information.</p>
+            
+            <form method="POST" class="row g-3">
+                <div class="col-md-6">
+                    <label for="restaurant_id" class="form-label">Filter by Restaurant (Optional):</label>
+                    <select class="form-select" id="restaurant_id" name="restaurant_id">
+                        <option value="">All Restaurants</option>
+                        {% for restaurant in restaurants %}
+                        <option value="{{ restaurant.Restaurant_ID }}" 
+                            {% if restaurant.Restaurant_ID|string == selected_restaurant %}selected{% endif %}>
+                            {{ restaurant.Name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Execute Query
+                    </button>
+                </div>
+            </form>
+
+            <!-- SQL Query Display -->
+            <div class="mt-3">
+                <details class="bg-light p-3 rounded">
+                    <summary class="cursor-pointer text-secondary">
+                        <strong>View SQL Query</strong>
+                    </summary>
+                    <pre class="mt-2 bg-dark text-light p-3 rounded"><code>
+SELECT 
+    o.Order_ID,
+    CONCAT(c.First_Name, ' ', c.Last_Name) AS CustomerName,
+    r.Name AS RestaurantName,
+    o.Order_Date,
+    o.Total_Amount,
+    d.Delivery_ID,
+    d.Location,
+    d.Delivery_Fee,
+    CONCAT(dr.First_Name, ' ', dr.Last_Name) AS DriverName
+FROM orders o
+JOIN customers c ON o.Customer_ID = c.Customer_ID
+JOIN restaurants r ON o.Restaurant_ID = r.Restaurant_ID
+LEFT JOIN deliveries d ON o.Order_ID = d.Order_ID
+LEFT JOIN delivery_drivers dr ON d.Driver_ID = dr.Driver_ID
+ORDER BY o.Order_Date DESC
+                    </code></pre>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    {% if results %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Query Results ({{ results|length }} records)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Restaurant</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Location</th>
+                            <th>Driver</th>
+                            <th>Fee</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in results %}
+                        <tr>
+                            <td><strong>#{{ row.Order_ID }}</strong></td>
+                            <td>{{ row.CustomerName }}</td>
+                            <td>{{ row.RestaurantName }}</td>
+                            <td>{{ row.Order_Date }}</td>
+                            <td>₹{{ "%.2f"|format(row.Total_Amount) }}</td>
+                            <td>{{ row.Location or '-' }}</td>
+                            <td>{{ row.DriverName or 'Unassigned' }}</td>
+                            <td>₹{{ "%.2f"|format(row.Delivery_Fee or 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif request.method == 'POST' %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <strong>No Results</strong> - No orders found matching the criteria.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    details summary::-webkit-details-marker {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

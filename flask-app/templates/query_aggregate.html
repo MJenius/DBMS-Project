@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Aggregate Query - Statistics and Reports{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">📊 Aggregate Query: Business Statistics and Reports</h2>
+
+    <!-- Query Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Query Parameters</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Select a report type to view aggregated business statistics and analytics.</p>
+            
+            <form method="POST" class="row g-3">
+                <div class="col-md-8">
+                    <label for="query_type" class="form-label">Select Report Type:</label>
+                    <select class="form-select form-select-lg" id="query_type" name="query_type" required>
+                        <option value="all_restaurants" {% if query_type == 'all_restaurants' %}selected{% endif %}>
+                            📍 Restaurant Revenue & Order Statistics
+                        </option>
+                        <option value="driver_earnings" {% if query_type == 'driver_earnings' %}selected{% endif %}>
+                            🚗 Driver Earnings & Delivery Statistics
+                        </option>
+                        <option value="customer_spending" {% if query_type == 'customer_spending' %}selected{% endif %}>
+                            👥 Customer Spending & Order History
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-bar-chart"></i> Generate Report
+                    </button>
+                </div>
+            </form>
+
+            <!-- SQL Query Display -->
+            <div class="mt-3">
+                <details class="bg-light p-3 rounded">
+                    <summary class="cursor-pointer text-secondary">
+                        <strong>View SQL Query</strong>
+                    </summary>
+                    <pre class="mt-2 bg-dark text-light p-3 rounded"><code>
+{% if query_type == 'all_restaurants' %}
+SELECT 
+    r.Restaurant_ID, r.Name,
+    COUNT(DISTINCT o.Order_ID) AS TotalOrders,
+    SUM(o.Total_Amount) AS TotalRevenue,
+    AVG(o.Total_Amount) AS AvgOrderValue,
+    MAX(o.Total_Amount) AS HighestOrder,
+    MIN(o.Total_Amount) AS LowestOrder
+FROM restaurants r
+LEFT JOIN orders o ON r.Restaurant_ID = o.Restaurant_ID
+GROUP BY r.Restaurant_ID, r.Name
+ORDER BY TotalRevenue DESC
+{% elif query_type == 'driver_earnings' %}
+SELECT 
+    dr.Driver_ID, CONCAT(dr.First_Name, ' ', dr.Last_Name) AS DriverName,
+    COUNT(DISTINCT d.Delivery_ID) AS TotalDeliveries,
+    SUM(d.Delivery_Fee) AS TotalEarnings,
+    AVG(d.Delivery_Fee) AS AvgFeePerDelivery
+FROM delivery_drivers dr
+LEFT JOIN deliveries d ON dr.Driver_ID = d.Driver_ID
+GROUP BY dr.Driver_ID, dr.First_Name, dr.Last_Name
+ORDER BY TotalEarnings DESC
+{% elif query_type == 'customer_spending' %}
+SELECT 
+    c.Customer_ID, CONCAT(c.First_Name, ' ', c.Last_Name) AS CustomerName,
+    COUNT(DISTINCT o.Order_ID) AS TotalOrders,
+    SUM(o.Total_Amount) AS TotalSpent,
+    AVG(o.Total_Amount) AS AvgOrderValue
+FROM customers c
+LEFT JOIN orders o ON c.Customer_ID = o.Customer_ID
+GROUP BY c.Customer_ID, c.First_Name, c.Last_Name
+ORDER BY TotalSpent DESC
+{% endif %}
+                    </code></pre>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    {% if results %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                {% if query_type == 'all_restaurants' %}
+                    📍 Restaurant Revenue & Order Statistics ({{ results|length }} restaurants)
+                {% elif query_type == 'driver_earnings' %}
+                    🚗 Driver Earnings & Delivery Statistics ({{ results|length }} drivers)
+                {% else %}
+                    👥 Customer Spending & Order History ({{ results|length }} customers)
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            {% if query_type == 'all_restaurants' %}
+                            <th>Restaurant ID</th>
+                            <th>Restaurant Name</th>
+                            <th>Total Orders</th>
+                            <th>Total Revenue</th>
+                            <th>Avg Order Value</th>
+                            <th>Highest Order</th>
+                            <th>Lowest Order</th>
+                            {% elif query_type == 'driver_earnings' %}
+                            <th>Driver ID</th>
+                            <th>Driver Name</th>
+                            <th>Total Deliveries</th>
+                            <th>Total Earnings</th>
+                            <th>Avg Fee per Delivery</th>
+                            {% else %}
+                            <th>Customer ID</th>
+                            <th>Customer Name</th>
+                            <th>Total Orders</th>
+                            <th>Total Spent</th>
+                            <th>Avg Order Value</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in results %}
+                        <tr>
+                            {% if query_type == 'all_restaurants' %}
+                            <td><strong>#{{ row.Restaurant_ID }}</strong></td>
+                            <td>{{ row.Name }}</td>
+                            <td><span class="badge bg-info">{{ row.TotalOrders }}</span></td>
+                            <td><strong>₹{{ "%.2f"|format(row.TotalRevenue or 0) }}</strong></td>
+                            <td>₹{{ "%.2f"|format(row.AvgOrderValue or 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.HighestOrder or 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.LowestOrder or 0) }}</td>
+                            {% elif query_type == 'driver_earnings' %}
+                            <td><strong>#{{ row.Driver_ID }}</strong></td>
+                            <td>{{ row.DriverName }}</td>
+                            <td><span class="badge bg-success">{{ row.TotalDeliveries }}</span></td>
+                            <td><strong>₹{{ "%.2f"|format(row.TotalEarnings or 0) }}</strong></td>
+                            <td>₹{{ "%.2f"|format(row.AvgFeePerDelivery or 0) }}</td>
+                            {% else %}
+                            <td><strong>#{{ row.Customer_ID }}</strong></td>
+                            <td>{{ row.CustomerName }}</td>
+                            <td><span class="badge bg-warning">{{ row.TotalOrders }}</span></td>
+                            <td><strong>₹{{ "%.2f"|format(row.TotalSpent or 0) }}</strong></td>
+                            <td>₹{{ "%.2f"|format(row.AvgOrderValue or 0) }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif request.method == 'POST' %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <strong>No Results</strong> - No data available for the selected report.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    details summary::-webkit-details-marker {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
