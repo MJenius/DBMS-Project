@@ -600,9 +600,23 @@ def edit_menu_item(menu_item_id: int):
 @app.route('/menu/delete/<int:menu_item_id>')
 def delete_menu_item(menu_item_id: int):
     cur = get_cursor()
-    cur.execute("DELETE FROM menu WHERE Menu_Item_ID=%s", (menu_item_id,))
-    commit_db()
-    flash('Menu item deleted', 'warning')
+    try:
+        cur.execute("DELETE FROM menu WHERE Menu_Item_ID=%s", (menu_item_id,))
+        commit_db()
+        flash('Menu item deleted', 'warning')
+    except Exception as e:
+        # Rollback the transaction on error
+        assert mysql is not None
+        conn = cast(Any, mysql.connection)
+        assert conn is not None
+        conn.rollback()
+        
+        # Check if foreign key constraint error
+        if 'foreign key' in str(e).lower():
+            flash(f'Cannot delete this menu item because it is referenced in active orders. Please check order history or contact support.', 'danger')
+        else:
+            flash(f'Error deleting menu item: {str(e)}', 'danger')
+    
     return redirect(url_for('menu_items'))
 
 
