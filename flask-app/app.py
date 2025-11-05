@@ -693,8 +693,10 @@ def delete_user(username: str):
     """
     Delete a database user
     """
-    if username.lower() in ['root', 'admin']:
-        flash(f'Cannot delete system user: {username}', 'danger')
+    # Protect system users from deletion
+    protected_users = ['root', 'admin', 'mysql.sys', 'mysql.session', 'mysql.infoschema']
+    if username.lower() in protected_users:
+        flash(f'Cannot delete system user: {username}. This user is protected.', 'danger')
         return redirect(url_for('users'))
     
     cur = get_cursor()
@@ -724,6 +726,43 @@ def user_privileges(username: str):
         grants = []
     
     return render_template('user_privileges.html', username=username, grants=grants)
+
+
+@app.route('/user/privileges/<username>/update', methods=['POST'])
+def update_user_privileges(username: str):
+    """
+    Update privileges for a specific user
+    """
+    # Protect system users
+    protected_users = ['root', 'admin', 'mysql.sys', 'mysql.session', 'mysql.infoschema']
+    if username.lower() in protected_users:
+        flash(f'Cannot modify privileges for system user: {username}', 'danger')
+        return redirect(url_for('user_privileges', username=username))
+    
+    cur = get_cursor()
+    try:
+        privilege_level = request.form.get('privilege_level', 'viewer')
+        
+        # First, revoke all current privileges
+        cur.execute(f"REVOKE ALL PRIVILEGES ON dbms_project.* FROM '{username}'@'localhost'")
+        
+        # Grant new privileges based on role
+        if privilege_level == 'admin':
+            cur.execute(f"GRANT ALL PRIVILEGES ON dbms_project.* TO '{username}'@'localhost'")
+        elif privilege_level == 'manager':
+            cur.execute(f"GRANT SELECT, INSERT, UPDATE ON dbms_project.* TO '{username}'@'localhost'")
+        elif privilege_level == 'operator':
+            cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON dbms_project.* TO '{username}'@'localhost'")
+        else:  # viewer
+            cur.execute(f"GRANT SELECT ON dbms_project.* TO '{username}'@'localhost'")
+        
+        cur.execute("FLUSH PRIVILEGES")
+        commit_db()
+        flash(f'Privileges updated for user "{username}" to {privilege_level.upper()}', 'success')
+    except Exception as e:
+        flash(f'Error updating privileges: {str(e)}', 'danger')
+    
+    return redirect(url_for('user_privileges', username=username))
 
 
 # ----------------------------

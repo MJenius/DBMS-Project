@@ -36,7 +36,10 @@
                                 <a href="{{ url_for('user_privileges', username=user.user) }}" class="btn btn-sm btn-info">
                                     <i class="bi bi-shield-check"></i> View Privileges
                                 </a>
-                                {% if user.user.lower() not in ['root', 'admin', 'mysql.sys', 'mysql.session'] %}
+                                {% if user.user.lower() not in ['root', 'admin', 'mysql.sys', 'mysql.session', 'mysql.infoschema'] %}
+                                <a href="{{ url_for('user_privileges', username=user.user) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i> Edit Privileges
+                                </a>
                                 <form method="POST" action="{{ url_for('delete_user', username=user.user) }}" style="display:inline;">
                                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete user {{ user.user }}?')">
                                         <i class="bi bi-trash"></i> Delete

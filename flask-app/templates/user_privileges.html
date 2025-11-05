@@ -71,6 +71,38 @@
         </div>
     </div>
 
+    <!-- Edit Privileges Form -->
+    {% if username.lower() not in ['root', 'admin', 'mysql.sys', 'mysql.session', 'mysql.infoschema'] %}
+    <div class="card mt-4 bg-light border-success">
+        <div class="card-header bg-success text-white">
+            <h6 class="mb-0"><i class="fas fa-pencil" style="margin-right: 8px;"></i>Edit User Privileges</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('update_user_privileges', username=username) }}">
+                <div class="mb-3">
+                    <label for="privilege_level" class="form-label"><strong>Select Privilege Level:</strong></label>
+                    <select class="form-select" id="privilege_level" name="privilege_level" required>
+                        <option value="">-- Choose Privilege Level --</option>
+                        <option value="admin">Admin (All Privileges)</option>
+                        <option value="manager">Manager (SELECT, INSERT, UPDATE)</option>
+                        <option value="operator">Operator (SELECT, INSERT, UPDATE, DELETE)</option>
+                        <option value="viewer">Viewer (SELECT Only)</option>
+                    </select>
+                </div>
+                <div class="alert alert-info small">
+                    <strong>Note:</strong> Changing the privilege level will revoke all current privileges and grant only the new ones.
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i>Update Privileges
+                </button>
+                <a href="{{ url_for('users') }}" class="btn btn-secondary">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
     {% else %}
     <div class="alert alert-warning" role="alert">
         <i class="bi bi-exclamation-triangle"></i> No privileges found for this user or error retrieving privileges.
