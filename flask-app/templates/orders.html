@@ -3,7 +3,7 @@
 {% block title %}Orders{% endblock %}
 
 {% block content %}
-  <h2 class="mb-3">Orders</h2>
+  <h2 class="mb-3"><i class="fas fa-receipt" style="margin-right: 12px;"></i>Orders</h2>
 
   <form method="get" class="row g-2 mb-3 align-items-center">
     <div class="col-auto">
@@ -16,13 +16,13 @@
 
   <div class="table-responsive">
     <table class="table table-hover table-bordered">
-      <thead class="table-light">
+      <thead class="table-dark">
         <tr>
           <th>Order ID</th>
           <th>Customer</th>
           <th>Restaurant</th>
           <th>Order Date</th>
-          <th></th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -32,7 +32,16 @@
           <td>{{ o.First_Name }} {{ o.Last_Name }}</td>
           <td>{{ o.Restaurant }}</td>
           <td>{{ o.Order_Date }}</td>
-          <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('order_detail', order_id=o.Order_ID) }}">View</a></td>
+          <td>
+            <a class="btn btn-sm btn-primary" href="{{ url_for('order_detail', order_id=o.Order_ID) }}">
+              <i class="fas fa-eye"></i> View
+            </a>
+            <form method="POST" action="{{ url_for('delete_order', order_id=o.Order_ID) }}" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete order #{{ o.Order_ID }}? This will also delete all associated items and deliveries.')">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </form>
+          </td>
         </tr>
         {% else %}
         <tr><td colspan="5" class="text-center">No orders found.</td></tr>

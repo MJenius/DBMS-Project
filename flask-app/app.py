@@ -114,7 +114,7 @@ def assign_delivery():
 def view_data():
     cur = get_cursor()
     cur.execute("""
-        SELECT c.First_Name, c.Last_Name, r.Name AS Restaurant_Name, d.Pickup_Time, d.Location
+        SELECT d.Delivery_ID as delivery_id, c.First_Name, c.Last_Name, r.Name AS Restaurant_Name, d.Pickup_Time, d.Location
         FROM deliveries d
         JOIN orders o ON d.Order_ID = o.Order_ID
         JOIN customers c ON o.Customer_ID = c.Customer_ID
@@ -189,6 +189,70 @@ def order_detail(order_id: int):
         deliveries = []
 
     return render_template('order_detail.html', order=order, items=items, deliveries=deliveries)
+
+
+@app.route('/order/delete/<int:order_id>', methods=['POST'])
+def delete_order(order_id: int):
+    """
+    Delete an order and all related data (order items and deliveries)
+    """
+    cur = get_cursor()
+    try:
+        # Get order info for the message
+        cur.execute("SELECT o.Order_ID, CONCAT(c.First_Name, ' ', c.Last_Name) as customer_name FROM orders o JOIN customers c ON o.Customer_ID=c.Customer_ID WHERE o.Order_ID=%s", (order_id,))
+        order = cur.fetchone()
+        order_info = f"Order #{order_id} from {order['customer_name']}" if order else f"Order #{order_id}"
+        
+        # Delete in correct order to respect foreign keys
+        # 1. Delete deliveries for this order
+        cur.execute("DELETE FROM deliveries WHERE Order_ID=%s", (order_id,))
+        
+        # 2. Delete order items
+        cur.execute("DELETE FROM order_items WHERE Order_ID=%s", (order_id,))
+        
+        # 3. Delete the order itself
+        cur.execute("DELETE FROM orders WHERE Order_ID=%s", (order_id,))
+        
+        commit_db()
+        flash(f'{order_info} and all associated data has been deleted successfully', 'success')
+    except Exception as e:
+        # Rollback on error
+        assert mysql is not None
+        conn = cast(Any, mysql.connection)
+        assert conn is not None
+        conn.rollback()
+        
+        flash(f'Error deleting order: {str(e)}', 'danger')
+    
+    return redirect(url_for('orders'))
+
+
+@app.route('/delivery/delete/<int:delivery_id>', methods=['POST'])
+def delete_delivery(delivery_id: int):
+    """
+    Delete a delivery record
+    """
+    cur = get_cursor()
+    try:
+        # Get delivery info for the message
+        cur.execute("SELECT Location FROM deliveries WHERE Delivery_ID=%s", (delivery_id,))
+        delivery = cur.fetchone()
+        delivery_info = f"Delivery #{delivery_id} to {delivery['Location']}" if delivery else f"Delivery #{delivery_id}"
+        
+        # Delete the delivery
+        cur.execute("DELETE FROM deliveries WHERE Delivery_ID=%s", (delivery_id,))
+        commit_db()
+        flash(f'{delivery_info} has been deleted successfully', 'success')
+    except Exception as e:
+        # Rollback on error
+        assert mysql is not None
+        conn = cast(Any, mysql.connection)
+        assert conn is not None
+        conn.rollback()
+        
+        flash(f'Error deleting delivery: {str(e)}', 'danger')
+    
+    return redirect(url_for('view_data'))
 
 # ----------------------------
 # Function Calls (reports)
@@ -448,10 +512,29 @@ def delete_customer(customer_id: int):
         customer = cur.fetchone()
         customer_name = customer['name'] if customer else 'Customer'
         
-        # Try to delete the customer
+        # Get all order IDs for this customer
+        cur.execute("SELECT Order_ID FROM orders WHERE Customer_ID=%s", (customer_id,))
+        orders = cur.fetchall()
+        
+        # Delete all related data in correct order
+        for order in orders:
+            order_id = order['Order_ID']
+            # Delete deliveries for this order
+            cur.execute("DELETE FROM deliveries WHERE Order_ID=%s", (order_id,))
+            # Delete order items
+            cur.execute("DELETE FROM order_items WHERE Order_ID=%s", (order_id,))
+            # Delete the order
+            cur.execute("DELETE FROM orders WHERE Order_ID=%s", (order_id,))
+        
+        # Finally delete the customer
         cur.execute("DELETE FROM customers WHERE Customer_ID=%s", (customer_id,))
         commit_db()
-        flash(f'Customer "{customer_name}" has been deleted successfully', 'success')
+        
+        order_count = len(orders) if orders else 0
+        if order_count > 0:
+            flash(f'Customer "{customer_name}" and their {order_count} order(s) with all associated data have been deleted successfully', 'success')
+        else:
+            flash(f'Customer "{customer_name}" has been deleted successfully', 'success')
     except Exception as e:
         # Rollback on error
         assert mysql is not None
@@ -461,9 +544,9 @@ def delete_customer(customer_id: int):
         
         # Handle foreign key constraint errors gracefully
         if 'foreign key' in str(e).lower():
-            flash(f'Cannot delete this customer because they have active orders in the system. Please cancel their orders first or contact support.', 'danger')
+            flash(f'Error deleting customer data. There may be external references to this customer.', 'danger')
         elif 'constraint' in str(e).lower():
-            flash(f'Cannot delete this customer due to related data. Please ensure all associated orders and deliveries are handled first.', 'danger')
+            flash(f'Cannot delete this customer due to data constraints. Please contact support.', 'danger')
         else:
             flash(f'Error deleting customer: {str(e)}', 'danger')
     

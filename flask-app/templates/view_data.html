@@ -3,25 +3,35 @@
 {% block title %}Deliveries{% endblock %}
 
 {% block content %}
-    <h2 class="mb-3">All Deliveries</h2>
+    <h2 class="mb-3"><i class="fas fa-truck" style="margin-right: 12px;"></i>All Deliveries</h2>
 
     <div class="table-responsive">
         <table class="table table-striped table-bordered align-middle">
-            <thead class="table-primary">
+            <thead class="table-dark">
                 <tr>
+                    <th>Delivery ID</th>
                     <th>Customer</th>
                     <th>Restaurant</th>
                     <th>Pickup Time</th>
                     <th>Location</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in records %}
                 <tr>
+                    <td>#{{ row.delivery_id }}</td>
                     <td>{{ row.First_Name }} {{ row.Last_Name }}</td>
                     <td>{{ row.Restaurant_Name }}</td>
                     <td>{{ row.Pickup_Time }}</td>
                     <td>{{ row.Location }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_delivery', delivery_id=row.delivery_id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete delivery #{{ row.delivery_id }} to {{ row.Location }}? This cannot be undone.')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
