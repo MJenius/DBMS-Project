@@ -442,9 +442,31 @@ def edit_customer(customer_id: int):
 @app.route('/customer/delete/<int:customer_id>')
 def delete_customer(customer_id: int):
     cur = get_cursor()
-    cur.execute("DELETE FROM customers WHERE Customer_ID=%s", (customer_id,))
-    commit_db()
-    flash('Customer deleted', 'warning')
+    try:
+        # First, get customer name for the message
+        cur.execute("SELECT CONCAT(First_Name, ' ', Last_Name) as name FROM customers WHERE Customer_ID=%s", (customer_id,))
+        customer = cur.fetchone()
+        customer_name = customer['name'] if customer else 'Customer'
+        
+        # Try to delete the customer
+        cur.execute("DELETE FROM customers WHERE Customer_ID=%s", (customer_id,))
+        commit_db()
+        flash(f'Customer "{customer_name}" has been deleted successfully', 'success')
+    except Exception as e:
+        # Rollback on error
+        assert mysql is not None
+        conn = cast(Any, mysql.connection)
+        assert conn is not None
+        conn.rollback()
+        
+        # Handle foreign key constraint errors gracefully
+        if 'foreign key' in str(e).lower():
+            flash(f'Cannot delete this customer because they have active orders in the system. Please cancel their orders first or contact support.', 'danger')
+        elif 'constraint' in str(e).lower():
+            flash(f'Cannot delete this customer due to related data. Please ensure all associated orders and deliveries are handled first.', 'danger')
+        else:
+            flash(f'Error deleting customer: {str(e)}', 'danger')
+    
     return redirect(url_for('customers'))
 
 
@@ -492,9 +514,31 @@ def edit_restaurant(restaurant_id: int):
 @app.route('/restaurant/delete/<int:restaurant_id>')
 def delete_restaurant(restaurant_id: int):
     cur = get_cursor()
-    cur.execute("DELETE FROM restaurants WHERE Restaurant_ID=%s", (restaurant_id,))
-    commit_db()
-    flash('Restaurant deleted', 'warning')
+    try:
+        # Get restaurant name for the message
+        cur.execute("SELECT Name FROM restaurants WHERE Restaurant_ID=%s", (restaurant_id,))
+        restaurant = cur.fetchone()
+        restaurant_name = restaurant['Name'] if restaurant else 'Restaurant'
+        
+        # Try to delete the restaurant
+        cur.execute("DELETE FROM restaurants WHERE Restaurant_ID=%s", (restaurant_id,))
+        commit_db()
+        flash(f'Restaurant "{restaurant_name}" has been deleted successfully', 'success')
+    except Exception as e:
+        # Rollback on error
+        assert mysql is not None
+        conn = cast(Any, mysql.connection)
+        assert conn is not None
+        conn.rollback()
+        
+        # Handle foreign key constraint errors gracefully
+        if 'foreign key' in str(e).lower():
+            flash(f'Cannot delete this restaurant because it has menu items, orders, or deliveries associated with it. Please handle related data first.', 'danger')
+        elif 'constraint' in str(e).lower():
+            flash(f'Cannot delete this restaurant due to related data constraints. Please ensure all associated records are removed first.', 'danger')
+        else:
+            flash(f'Error deleting restaurant: {str(e)}', 'danger')
+    
     return redirect(url_for('restaurants'))
 
 
@@ -544,9 +588,31 @@ def edit_driver(driver_id: int):
 @app.route('/driver/delete/<int:driver_id>')
 def delete_driver(driver_id: int):
     cur = get_cursor()
-    cur.execute("DELETE FROM delivery_drivers WHERE Driver_ID=%s", (driver_id,))
-    commit_db()
-    flash('Driver deleted', 'warning')
+    try:
+        # Get driver name for the message
+        cur.execute("SELECT CONCAT(First_Name, ' ', Last_Name) as name FROM delivery_drivers WHERE Driver_ID=%s", (driver_id,))
+        driver = cur.fetchone()
+        driver_name = driver['name'] if driver else 'Driver'
+        
+        # Try to delete the driver
+        cur.execute("DELETE FROM delivery_drivers WHERE Driver_ID=%s", (driver_id,))
+        commit_db()
+        flash(f'Driver "{driver_name}" has been deleted successfully', 'success')
+    except Exception as e:
+        # Rollback on error
+        assert mysql is not None
+        conn = cast(Any, mysql.connection)
+        assert conn is not None
+        conn.rollback()
+        
+        # Handle foreign key constraint errors gracefully
+        if 'foreign key' in str(e).lower():
+            flash(f'Cannot delete this driver because they have active deliveries assigned. Please reassign or complete their deliveries first.', 'danger')
+        elif 'constraint' in str(e).lower():
+            flash(f'Cannot delete this driver due to related delivery records. Please ensure all associated deliveries are handled first.', 'danger')
+        else:
+            flash(f'Error deleting driver: {str(e)}', 'danger')
+    
     return redirect(url_for('drivers'))
 
 
