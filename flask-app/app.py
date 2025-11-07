@@ -526,6 +526,9 @@ def delete_customer(customer_id: int):
             # Delete the order
             cur.execute("DELETE FROM orders WHERE Order_ID=%s", (order_id,))
         
+        # Delete from customer_current_orders (NEW LINE)
+        cur.execute("DELETE FROM customer_current_orders WHERE Customer_ID=%s", (customer_id,))
+        
         # Finally delete the customer
         cur.execute("DELETE FROM customers WHERE Customer_ID=%s", (customer_id,))
         commit_db()
@@ -551,7 +554,6 @@ def delete_customer(customer_id: int):
             flash(f'Error deleting customer: {str(e)}', 'danger')
     
     return redirect(url_for('customers'))
-
 
 # ----------------------------
 # CRUD: Restaurants
